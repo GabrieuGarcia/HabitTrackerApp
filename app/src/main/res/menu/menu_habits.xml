@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Options menu for the HabitActivity -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".HabitActivity">
+
+    <item
+        android:id="@+id/action_insert_habit"
+        android:title="Insira um hábito"
+        app:showAsAction="never" />
+</menu>
