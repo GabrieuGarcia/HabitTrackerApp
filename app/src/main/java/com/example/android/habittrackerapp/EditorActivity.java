@@ -48,6 +48,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
      */
     private EditText mHabitText;
 
+    private EditText mImportanceText;
+
     /**
      * Boolean flag that keeps track of whether the habit has been edited (true) or not (false)
      */
@@ -71,37 +73,37 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         setContentView(R.layout.activity_editor);
 
         // Examine the intent that was used to launch this activity,
-        // in order to figure out if we're creating a new habit or editing an existing one.
+        // in order to figure out if we're creating a new pet or editing an existing one.
         Intent intent = getIntent();
         mCurrentHabitUri = intent.getData();
 
-        // If the intent DOES NOT contain a habit content URI, then we know that we are
-        // creating a new habit.
+        // If the intent DOES NOT contain a pet content URI, then we know that we are
+        // creating a new pet.
         if (mCurrentHabitUri == null) {
-            // This is a new habit, so change the app bar to say mCurrentHabitUri"
-            setTitle("Adicione um novo hábito");
+            // This is a new pet, so change the app bar to say "Add a Pet"
+            setTitle(getString(R.string.insert));
 
             // Invalidate the options menu, so the "Delete" menu option can be hidden.
-            // (It doesn't make sense to delete a habit that hasn't been created yet.)
+            // (It doesn't make sense to delete a pet that hasn't been created yet.)
             invalidateOptionsMenu();
         } else {
-            // Otherwise this is an existing habit, so change app bar to samCurrentHabitUri"
-            setTitle("Edite seu hábito");
+            // Otherwise this is an existing pet, so change app bar to say "Edit Pet"
+            setTitle(getString(R.string.edit));
 
-            // Initialize a loader to read the habit data from the database
+            // Initialize a loader to read the pet data from the database
             // and display the current values in the editor
             getLoaderManager().initLoader(EXISTING_HABIT_LOADER, null, this);
         }
 
         // Find all relevant views that we will need to read user input from
-
         mHabitText = (EditText) findViewById(R.id.edit_habit);
+        mImportanceText = (EditText) findViewById(R.id.habit_importance);
 
         // Setup OnTouchListeners on all the input fields, so we can determine if the user
         // has touched or modified them. This will let us know if there are unsaved changes
         // or not, if the user tries to leave the editor without saving.
         mHabitText.setOnTouchListener(mTouchListener);
-
+        mImportanceText.setOnTouchListener(mTouchListener);
     }
 
     /**
@@ -111,45 +113,54 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         // Read from input fields
         // Use trim to eliminate leading or trailing white space
         String habitString = mHabitText.getText().toString().trim();
+        Integer importanceString = Integer.parseInt(mImportanceText.getText().toString().trim());
 
-        if (mCurrentHabitUri == null && TextUtils.isEmpty(habitString)) {
+        // Check if this is supposed to be a new pet
+        // and check if all the fields in the editor are blank
+        if (mCurrentHabitUri == null &&
+                TextUtils.isEmpty(habitString) && importanceString == null) {
+            // Since no fields were modified, we can return early without creating a new pet.
+            // No need to create ContentValues and no need to do any ContentProvider operations.
             return;
         }
 
+        // Create a ContentValues object where column names are the keys,
+        // and pet attributes from the editor are the values.
         ContentValues values = new ContentValues();
         values.put(HabitEntry.COLUMN_HABIT, habitString);
+        values.put(HabitEntry.COLUMN_IMPORTANCE, importanceString);
 
-        // Determine if this is a new or existing habit by checking if mCurrentHabitUri is null or not
+        // Determine if this is a new or existing pet by checking if mCurrentPetUri is null or not
         if (mCurrentHabitUri == null) {
-            // This is a NEW habit, so insert a new habit into the provider,
-            // returning the content URI for the new habit.
+            // This is a NEW pet, so insert a new pet into the provider,
+            // returning the content URI for the new pet.
             Uri newUri = getContentResolver().insert(HabitEntry.CONTENT_URI, values);
 
             // Show a toast message depending on whether or not the insertion was successful.
             if (newUri == null) {
                 // If the new content URI is null, then there was an error with insertion.
-                Toast.makeText(this, "Erro ao adicionar este hábito",
+                Toast.makeText(this, getString(R.string.editor_insert_habit_failed),
                         Toast.LENGTH_SHORT).show();
             } else {
                 // Otherwise, the insertion was successful and we can display a toast.
-                Toast.makeText(this, "Seu hábito foi cadastrado!",
+                Toast.makeText(this, getString(R.string.editor_insert_habit_successful),
                         Toast.LENGTH_SHORT).show();
             }
         } else {
-            // Otherwise this is an EXISTING habit, so update the habit with content URI: mCurrentHabitUri
+            // Otherwise this is an EXISTING pet, so update the pet with content URI: mCurrentPetUri
             // and pass in the new ContentValues. Pass in null for the selection and selection args
-            // because mCurrentHabitUri will already identify the correct row in the database that
+            // because mCurrentPetUri will already identify the correct row in the database that
             // we want to modify.
             int rowsAffected = getContentResolver().update(mCurrentHabitUri, values, null, null);
 
             // Show a toast message depending on whether or not the update was successful.
             if (rowsAffected == 0) {
                 // If no rows were affected, then there was an error with the update.
-                Toast.makeText(this,"----------",
+                Toast.makeText(this, getString(R.string.editor_insert_habit_failed),
                         Toast.LENGTH_SHORT).show();
             } else {
                 // Otherwise, the update was successful and we can display a toast.
-                Toast.makeText(this, "----------",
+                Toast.makeText(this, getString(R.string.editor_insert_habit_successful),
                         Toast.LENGTH_SHORT).show();
             }
         }
@@ -170,7 +181,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        // If this is a new habit, hide the "Delete" menu item.
+        // If this is a new pet, hide the "Delete" menu item.
         if (mCurrentHabitUri == null) {
             MenuItem menuItem = menu.findItem(R.id.action_delete);
             menuItem.setVisible(false);
@@ -184,15 +195,15 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
-                // Save habit to database
+                // Save pet to database
                 saveHabit();
                 // Exit activity
                 finish();
                 return true;
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
-                // If the habit hasn't changed, continue with navigating up to parent activity
-                // which is the {@link HabitActivity}.
+                // If the pet hasn't changed, continue with navigating up to parent activity
+                // which is the {@link CatalogActivity}.
                 if (!mCurrentHabitUriHasChanged) {
                     NavUtils.navigateUpFromSameTask(EditorActivity.this);
                     return true;

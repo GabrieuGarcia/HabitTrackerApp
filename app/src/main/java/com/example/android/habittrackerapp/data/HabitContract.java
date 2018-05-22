@@ -77,5 +77,11 @@ public class HabitContract {
          */
         public final static String COLUMN_HABIT ="habit";
 
+        /**
+         * Habit.
+         *
+         * Type: INTEGER
+         */
+        public final static String COLUMN_IMPORTANCE ="importance";
     }
 }

@@ -27,6 +27,18 @@
             android:layout_height="wrap_content"
             android:inputType="textCapWords" />
 
+        <!-- Label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Digite a importância" />
+
+        <EditText
+            android:id="@+id/habit_importance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapWords" />
+
     </LinearLayout>
 
 </LinearLayout>

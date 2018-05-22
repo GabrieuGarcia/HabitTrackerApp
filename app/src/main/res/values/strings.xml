@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Habit Tracker App</string>
+    <string name="insert">Insert</string>
+    <string name="edit">Edit</string>
+    <string name="editor_insert_habit_failed">Fail on insert/edit habit</string>
+    <string name="editor_insert_pet_successful">Success on insert/edit habit</string>
+    <string name="editor_insert_habit_successful">Success on insert/edit habit</string>
 </resources>

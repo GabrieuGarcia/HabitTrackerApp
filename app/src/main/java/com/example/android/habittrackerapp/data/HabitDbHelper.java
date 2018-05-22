@@ -11,8 +11,6 @@ import android.net.Uri;
 
 import com.example.android.habittrackerapp.data.HabitContract.HabitEntry;
 
-import static java.security.AccessController.getContext;
-
 /**
  * Created by Gabriel on 26/04/2018.
  */
@@ -52,6 +50,27 @@ public class HabitDbHelper extends SQLiteOpenHelper {
      */
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
+    // Static initializer. This is run the first time anything is called from this class.
+    static {
+        // The calls to addURI() go here, for all of the content URI patterns that the provider
+        // should recognize. All paths added to the UriMatcher have a corresponding code to return
+        // when a match is found.
+
+        // The content URI of the form "content://com.example.android.pets/pets" will map to the
+        // integer code {@link #PETS}. This URI is used to provide access to MULTIPLE rows
+        // of the pets table.
+        sUriMatcher.addURI(HabitContract.CONTENT_AUTHORITY, HabitContract.PATH_HABITS, HABITS);
+
+        // The content URI of the form "content://com.example.android.pets/pets/#" will map to the
+        // integer code {@link #PET_ID}. This URI is used to provide access to ONE single row
+        // of the pets table.
+        //
+        // In this case, the "#" wildcard is used where "#" can be substituted for an integer.
+        // For example, "content://com.example.android.pets/pets/3" matches, but
+        // "content://com.example.android.pets/pets" (without a number at the end) doesn't match.
+        sUriMatcher.addURI(HabitContract.CONTENT_AUTHORITY, HabitContract.PATH_HABITS+ "/#", HABIT_ID);
+    }
+
     /**
      * Constructs a new instance of {@link HabitDbHelper}.
      *
@@ -69,7 +88,8 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         // Create a String that contains the SQL statement to create the pets table
         String SQL_CREATE_HABITS_TABLE = "CREATE TABLE " + HabitEntry.TABLE_HABIT + " ("
                 + HabitEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                + HabitEntry.COLUMN_HABIT + " TEXT NOT NULL);";
+                + HabitEntry.COLUMN_HABIT + " TEXT NOT NULL);"
+                + HabitEntry.COLUMN_IMPORTANCE + " INTEGER);";
 
         // Execute the SQL statement
         db.execSQL(SQL_CREATE_HABITS_TABLE);
@@ -124,7 +144,6 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         return cursor;
     }
 
-    @Override
     public int update(Uri uri, ContentValues contentValues, String selection,
                       String[] selectionArgs) {
         final int match = sUriMatcher.match(uri);
@@ -147,24 +166,23 @@ public class HabitDbHelper extends SQLiteOpenHelper {
      * Insert a pet into the database with the given content values. Return the new content URI
      * for that specific row in the database.
      */
-    private Uri insertPet(Uri uri, ContentValues values) {
-        // Check that the name is not null
-        String name = values.getAsString(PetEntry.COLUMN_PET_NAME);
-        if (name == null) {
-            throw new IllegalArgumentException("Pet requires a name");
+    private long insertPet(Uri uri, ContentValues values) {
+        // If the {@link HabitEntry#COLUMN_HABIT_NAME} key is present,
+        // check that the name value is not null.
+        if (!values.containsKey(HabitEntry.COLUMN_HABIT) ||
+                values.getAsString(HabitEntry.COLUMN_HABIT) == null) {
+            throw new IllegalArgumentException("Habit requires a name");
         }
 
-        // Check that the gender is valid
-        Integer gender = values.getAsInteger(PetEntry.COLUMN_PET_GENDER);
-        if (gender == null || !PetEntry.isValidGender(gender)) {
-            throw new IllegalArgumentException("Pet requires valid gender");
-        }
+        // Otherwise, get writeable database to update the data
+        SQLiteDatabase database = mDbHelper.getWritableDatabase();
 
-        // If the weight is provided, check that it's greater than or equal to 0 kg
-        Integer weight = values.getAsInteger(PetEntry.COLUMN_PET_WEIGHT);
-        if (weight != null && weight < 0) {
-            throw new IllegalArgumentException("Pet requires valid weight");
-        }
+        // Perform the update on the database and get the number of rows affected
+        long rowsUpdated = database.insert(HabitEntry.TABLE_HABIT, null, values);
+
+        // Return the number of rows inserted
+        return rowsUpdated;
+    }
 
     /**
      * Update pets in the database with the given content values. Apply the changes to the rows
