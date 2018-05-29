@@ -8,8 +8,11 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.util.Log;
 
 import com.example.android.habittrackerapp.data.HabitContract.HabitEntry;
+
+import java.util.Objects;
 
 /**
  * Created by Gabriel on 26/04/2018.
@@ -20,8 +23,7 @@ import com.example.android.habittrackerapp.data.HabitContract.HabitEntry;
  */
 public class HabitDbHelper extends SQLiteOpenHelper {
 
-    /** Database helper object */
-    private HabitDbHelper mDbHelper;
+    private static HabitDbHelper mDbHelper;
 
     /**
      * Name of the database file
@@ -31,7 +33,7 @@ public class HabitDbHelper extends SQLiteOpenHelper {
     /**
      * Database version. If you change the database schema, you must increment the database version.
      */
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 4;
 
     /**
      * URI matcher code for the content URI for the pets table
@@ -50,8 +52,14 @@ public class HabitDbHelper extends SQLiteOpenHelper {
      */
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
-    // Static initializer. This is run the first time anything is called from this class.
-    static {
+    /**
+     * Constructs a new instance of {@link HabitDbHelper}.
+     *
+     * @param context of the app
+     */
+    public HabitDbHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+
         // The calls to addURI() go here, for all of the content URI patterns that the provider
         // should recognize. All paths added to the UriMatcher have a corresponding code to return
         // when a match is found.
@@ -72,15 +80,6 @@ public class HabitDbHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Constructs a new instance of {@link HabitDbHelper}.
-     *
-     * @param context of the app
-     */
-    public HabitDbHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
-    }
-
-    /**
      * This is called when the database is created for the first time.
      */
     @Override
@@ -88,7 +87,7 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         // Create a String that contains the SQL statement to create the pets table
         String SQL_CREATE_HABITS_TABLE = "CREATE TABLE " + HabitEntry.TABLE_HABIT + " ("
                 + HabitEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                + HabitEntry.COLUMN_HABIT + " TEXT NOT NULL);"
+                + HabitEntry.COLUMN_HABIT + " TEXT NOT NULL,"
                 + HabitEntry.COLUMN_IMPORTANCE + " INTEGER);";
 
         // Execute the SQL statement
@@ -100,7 +99,8 @@ public class HabitDbHelper extends SQLiteOpenHelper {
      */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        db.execSQL("DROP TABLE " + HabitEntry.TABLE_HABIT + ";");
+        onCreate(db);
     }
 
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
@@ -162,11 +162,21 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         }
     }
 
+    public long insert(Uri uri, ContentValues contentValues) {
+        final int match = sUriMatcher.match(uri);
+        switch (match) {
+            case HABITS:
+                return insertPet(uri, contentValues);
+            default:
+                throw new IllegalArgumentException("Insertion is not supported for " + uri);
+        }
+    }
+
     /**
      * Insert a pet into the database with the given content values. Return the new content URI
      * for that specific row in the database.
      */
-    private long insertPet(Uri uri, ContentValues values) {
+    public long insertPet(Uri uri, ContentValues values) {
         // If the {@link HabitEntry#COLUMN_HABIT_NAME} key is present,
         // check that the name value is not null.
         if (!values.containsKey(HabitEntry.COLUMN_HABIT) ||
@@ -175,12 +185,18 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         }
 
         // Otherwise, get writeable database to update the data
-        SQLiteDatabase database = mDbHelper.getWritableDatabase();
+        SQLiteDatabase database = this.getWritableDatabase();
 
         // Perform the update on the database and get the number of rows affected
         long rowsUpdated = database.insert(HabitEntry.TABLE_HABIT, null, values);
 
-        // Return the number of rows inserted
+        database.close();
+
+        // If the ID is -1, then the insertion failed. Log an error and return null.
+        if (rowsUpdated == -1) {
+            Log.e("DB_ERROR", "Failed to insert row for " + uri);
+        }
+
         return rowsUpdated;
     }
 
@@ -189,7 +205,7 @@ public class HabitDbHelper extends SQLiteOpenHelper {
      * specified in the selection and selection arguments (which could be 0 or 1 or more pets).
      * Return the number of rows that were successfully updated.
      */
-    private int updateHabit(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public int updateHabit(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         // If the {@link HabitEntry#COLUMN_HABIT_NAME} key is present,
         // check that the name value is not null.
         if (values.containsKey(HabitEntry.COLUMN_HABIT)) {
