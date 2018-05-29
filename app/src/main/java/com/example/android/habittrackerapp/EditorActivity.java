@@ -12,6 +12,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
@@ -25,6 +26,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.android.habittrackerapp.data.HabitContract.HabitEntry;
+import com.example.android.habittrackerapp.data.HabitDbHelper;
 
 import static com.example.android.habittrackerapp.data.HabitContract.HabitEntry.COLUMN_HABIT;
 
@@ -37,6 +39,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
      * Identifier for the habit data loader
      */
     private static final int EXISTING_HABIT_LOADER = 0;
+    private HabitDbHelper mDbHelper;
 
     /**
      * Content URI for the existing habit (null if it's a new habit)
@@ -104,6 +107,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         // or not, if the user tries to leave the editor without saving.
         mHabitText.setOnTouchListener(mTouchListener);
         mImportanceText.setOnTouchListener(mTouchListener);
+
+        mDbHelper = new HabitDbHelper(this);
     }
 
     /**
@@ -134,7 +139,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         if (mCurrentHabitUri == null) {
             // This is a NEW pet, so insert a new pet into the provider,
             // returning the content URI for the new pet.
-            Uri newUri = getContentResolver().insert(HabitEntry.CONTENT_URI, values);
+            Long newUri = mDbHelper.insert(HabitEntry.CONTENT_URI, values);
 
             // Show a toast message depending on whether or not the insertion was successful.
             if (newUri == null) {
