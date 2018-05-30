@@ -12,8 +12,6 @@ import android.util.Log;
 
 import com.example.android.habittrackerapp.data.HabitContract.HabitEntry;
 
-import java.util.Objects;
-
 /**
  * Created by Gabriel on 26/04/2018.
  */
@@ -36,12 +34,12 @@ public class HabitDbHelper extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 4;
 
     /**
-     * URI matcher code for the content URI for the pets table
+     * URI matcher code for the content URI for the habits table
      */
     private static final int HABITS = 100;
 
     /**
-     * URI matcher code for the content URI for a single pet in the pets table
+     * URI matcher code for the content URI for a single habit in the habits table
      */
     private static final int HABIT_ID = 101;
 
@@ -64,18 +62,18 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         // should recognize. All paths added to the UriMatcher have a corresponding code to return
         // when a match is found.
 
-        // The content URI of the form "content://com.example.android.pets/pets" will map to the
-        // integer code {@link #PETS}. This URI is used to provide access to MULTIPLE rows
-        // of the pets table.
+        // The content URI of the form "content://com.example.android.habits/habits" will map to the
+        // integer code {@link #HABITS}. This URI is used to provide access to MULTIPLE rows
+        // of the habits table.
         sUriMatcher.addURI(HabitContract.CONTENT_AUTHORITY, HabitContract.PATH_HABITS, HABITS);
 
-        // The content URI of the form "content://com.example.android.pets/pets/#" will map to the
-        // integer code {@link #PET_ID}. This URI is used to provide access to ONE single row
-        // of the pets table.
+        // The content URI of the form "content://com.example.android.habits/habits/#" will map to the
+        // integer code {@link #HABIT_ID}. This URI is used to provide access to ONE single row
+        // of the habits table.
         //
         // In this case, the "#" wildcard is used where "#" can be substituted for an integer.
-        // For example, "content://com.example.android.pets/pets/3" matches, but
-        // "content://com.example.android.pets/pets" (without a number at the end) doesn't match.
+        // For example, "content://com.example.android.habits/habits/3" matches, but
+        // "content://com.example.android.habits/habits" (without a number at the end) doesn't match.
         sUriMatcher.addURI(HabitContract.CONTENT_AUTHORITY, HabitContract.PATH_HABITS+ "/#", HABIT_ID);
     }
 
@@ -84,7 +82,7 @@ public class HabitDbHelper extends SQLiteOpenHelper {
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create a String that contains the SQL statement to create the pets table
+        // Create a String that contains the SQL statement to create the habits table
         String SQL_CREATE_HABITS_TABLE = "CREATE TABLE " + HabitEntry.TABLE_HABIT + " ("
                 + HabitEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + HabitEntry.COLUMN_HABIT + " TEXT NOT NULL,"
@@ -115,15 +113,15 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         int match = sUriMatcher.match(uri);
         switch (match) {
             case HABITS:
-                // For the HABITS code, query the pets table directly with the given
+                // For the HABITS code, query the habits table directly with the given
                 // projection, selection, selection arguments, and sort order. The cursor
-                // could contain multiple rows of the pets table.
+                // could contain multiple rows of the habits table.
                 cursor = database.query(HabitEntry.TABLE_HABIT, projection, selection, selectionArgs,
                         null, null, sortOrder);
                 break;
             case HABIT_ID:
                 // For the HABIT_ID code, extract out the ID from the URI.
-                // For an example URI such as "content://com.example.android.pets/pets/3",
+                // For an example URI such as "content://com.example.android.habits/habits/3",
                 // the selection will be "_id=?" and the selection argument will be a
                 // String array containing the actual ID of 3 in this case.
                 //
@@ -133,7 +131,7 @@ public class HabitDbHelper extends SQLiteOpenHelper {
                 selection = HabitEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
 
-                // This will perform a query on the pets table where the _id equals 3 to return a
+                // This will perform a query on the habits table where the _id equals 3 to return a
                 // Cursor containing that row of the table.
                 cursor = database.query(HabitEntry.TABLE_HABIT, projection, selection, selectionArgs,
                         null, null, sortOrder);
@@ -166,20 +164,20 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case HABITS:
-                return insertPet(uri, contentValues);
+                return insertHabit(uri, contentValues);
             default:
                 throw new IllegalArgumentException("Insertion is not supported for " + uri);
         }
     }
 
     /**
-     * Insert a pet into the database with the given content values. Return the new content URI
+     * Insert a habit into the database with the given content values. Return the new content URI
      * for that specific row in the database.
      */
-    public long insertPet(Uri uri, ContentValues values) {
+    public long insertHabit(Uri uri, ContentValues values) {
         // If the {@link HabitEntry#COLUMN_HABIT_NAME} key is present,
         // check that the name value is not null.
-        if (!values.containsKey(HabitEntry.COLUMN_HABIT) ||
+        if (!values.containsKey(HabitEntry.COLUMN_HABIT) ||                      //habit
                 values.getAsString(HabitEntry.COLUMN_HABIT) == null) {
             throw new IllegalArgumentException("Habit requires a name");
         }
@@ -188,7 +186,10 @@ public class HabitDbHelper extends SQLiteOpenHelper {
         SQLiteDatabase database = this.getWritableDatabase();
 
         // Perform the update on the database and get the number of rows affected
-        long rowsUpdated = database.insert(HabitEntry.TABLE_HABIT, null, values);
+        long rowsUpdated = database.insert(HabitEntry.TABLE_HABIT, null, values); //habits
+
+        //QUANTIDADE DE ITENS NA TABELA HABITS (VIZUALIZAR NO LOGCAT)
+        System.out.println("DATABASE - " + database.rawQuery("SELECT * FROM habits", null).getCount());
 
         database.close();
 
@@ -201,8 +202,8 @@ public class HabitDbHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Update pets in the database with the given content values. Apply the changes to the rows
-     * specified in the selection and selection arguments (which could be 0 or 1 or more pets).
+     * Update habits in the database with the given content values. Apply the changes to the rows
+     * specified in the selection and selection arguments (which could be 0 or 1 or more habits).
      * Return the number of rows that were successfully updated.
      */
     public int updateHabit(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
@@ -242,6 +243,15 @@ public class HabitDbHelper extends SQLiteOpenHelper {
             default:
                 throw new IllegalStateException("Unknown URI " + uri + " with match " + match);
         }
+    }
+
+    public Cursor sectAll(){
+        // Otherwise, get writeable database to update the data
+        SQLiteDatabase database = mDbHelper.getReadableDatabase();
+
+        Cursor c = database.rawQuery("SELECT * FROM habits", null);
+
+        return c;
     }
 
 }
