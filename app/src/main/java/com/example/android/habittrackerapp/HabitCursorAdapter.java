@@ -14,7 +14,7 @@ import com.example.android.habittrackerapp.data.HabitContract.HabitEntry;
  * Created by Gabriel on 01/05/2018.
  */
 
-public class HabitCursorAdapter  extends CursorAdapter {
+public class HabitCursorAdapter extends CursorAdapter {
 
     /**
      * Constructs a new {@link HabitCursorAdapter}.
@@ -54,19 +54,24 @@ public class HabitCursorAdapter  extends CursorAdapter {
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
         // Find individual views that we want to modify in the list item layout
-        TextView habitTextView = (TextView) view.findViewById(R.id.habit);
+        TextView habitTextView      = (TextView) view.findViewById(R.id.habit_textView);
+        TextView importanceTextView = (TextView) view.findViewById(R.id.habit_importance);
 
         // Find the columns of habit attributes that we're interested in
-        int habitColumnIndex = cursor.getColumnIndex(HabitEntry.COLUMN_HABIT);
+        int habitColumnIndex      = cursor.getColumnIndex(HabitEntry.COLUMN_HABIT);
+        int importanceColumnIndex = cursor.getColumnIndex(HabitEntry.COLUMN_IMPORTANCE);
 
         // Read the habit attributes from the Cursor for the current habit
-        String habitName = cursor.getString(habitColumnIndex);
+        String habitName  = cursor.getString(habitColumnIndex);
+        String importance = cursor.getString(importanceColumnIndex);
 
         // If the habit breed is empty string or null, then use some default text
         // that says "Unknown breed", so the TextView isn't blank.
 
         // Update the TextViews with the attributes for the current habit
         habitTextView.setText(habitName);
+        importanceTextView.setText(importance);
+
     }
 
 }

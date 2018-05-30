@@ -1,15 +1,17 @@
 package com.example.android.habittrackerapp;
 
+import android.app.LoaderManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -22,9 +24,12 @@ import com.example.android.habittrackerapp.data.HabitDbHelper;
 /**
  * Displays list of habits that were entered and stored in the app.
  */
-public class HabitActivity extends AppCompatActivity {
+public class HabitActivity extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<Cursor> {
 
     /** Database helper that will provide us access to the database */
+    /** Identifier for the pet data loader */
+    private static final int HABIT_LOADER = 0;
 
     /** Adapter for the ListView */
     HabitCursorAdapter mCursorAdapter;
@@ -50,11 +55,13 @@ public class HabitActivity extends AppCompatActivity {
         });
 
         // Find the ListView which will be populated with the pet data
-        ListView habitListView = (ListView) findViewById(R.id.list);
+        ListView habitListView = (ListView) findViewById(R.id.list_habits);
 
         // Setup an Adapter to create a list item for each row of pet data in the Cursor.
         // There is no pet data yet (until the loader finishes) so pass in null for the Cursor.
-        mCursorAdapter = new HabitCursorAdapter(this, null);
+        HabitDbHelper db_h = new HabitDbHelper(this);
+
+        mCursorAdapter = new HabitCursorAdapter(this, db_h.sectAll());
         habitListView.setAdapter(mCursorAdapter);
 
         // Setup the item click listener
@@ -81,13 +88,14 @@ public class HabitActivity extends AppCompatActivity {
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
         mDbHelper = new HabitDbHelper(this);
+        getLoaderManager().initLoader(HABIT_LOADER, null, this);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        displayDatabaseInfo();
-    }
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//        displayDatabaseInfo();
+//    }
 
     /**
      * Temporary helper method to display information in the onscreen TextView about the state of
@@ -103,7 +111,6 @@ public class HabitActivity extends AppCompatActivity {
                 HabitEntry._ID,
                 HabitEntry.COLUMN_HABIT};
 
-        //TODO - colocar no HabitDbHelper
         // Perform a query on the habits table
         Cursor cursor = db.query(
                 HabitEntry.TABLE_HABIT,   // The table to query
@@ -164,14 +171,6 @@ public class HabitActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu options from the res/menu/menu_catalog.xml file.
-        // This adds menu items to the app bar.
-        getMenuInflater().inflate(R.menu.menu_habits, menu);
-        return true;
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // User clicked on a menu option in the app bar overflow menu
         switch (item.getItemId()) {
@@ -182,5 +181,34 @@ public class HabitActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        // Define a projection that specifies the columns from the table we care about.
+        String[] projection = {
+                HabitEntry._ID,
+                HabitEntry.COLUMN_HABIT,
+                HabitEntry.COLUMN_IMPORTANCE };
+
+        // This loader will execute the ContentProvider's query method on a background thread
+        return new CursorLoader(this,   // Parent activity context
+                HabitEntry.CONTENT_URI,   // Provider content URI to query
+                projection,             // Columns to include in the resulting Cursor
+                null,                   // No selection clause
+                null,                   // No selection arguments
+                null);                  // Default sort order
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        // Update {@link PetCursorAdapter} with this new cursor containing updated pet data
+        mCursorAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        // Callback called when the data needs to be deleted
+        mCursorAdapter.swapCursor(null);
     }
 }
